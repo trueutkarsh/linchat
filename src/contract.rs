@@ -2,48 +2,81 @@
 
 mod state;
 
-use self::state::Application;
+use self::state::Linchat;
 use async_trait::async_trait;
+use linchat::{Account, Operation, ChatMessage, Message, MAX_Q_SIZE};
 use linera_sdk::{
     base::{SessionId, WithContractAbi},
     ApplicationCallResult, CalleeContext, Contract, ExecutionResult, MessageContext,
-    OperationContext, SessionCallResult, ViewStateStorage,
+    OperationContext, SessionCallResult, ViewStateStorage, contract::system_api,
 };
 use thiserror::Error;
 
-linera_sdk::contract!(Application);
+linera_sdk::contract!(Linchat);
 
-impl WithContractAbi for Application {
-    type Abi = linchat::ApplicationAbi;
+impl WithContractAbi for Linchat {
+    type Abi = linchat::LinchatAbi;
 }
 
+
+
 #[async_trait]
-impl Contract for Application {
-    type Error = ContractError;
+impl Contract for Linchat {
+    type Error = Error;
     type Storage = ViewStateStorage<Self>;
 
     async fn initialize(
         &mut self,
         _context: &OperationContext,
-        _argument: Self::InitializationArgument,
+        username: String,
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
+        let account = Account {
+            username,
+            chain_id: system_api::current_chain_id() 
+        };
+        self.owner.insert(&account).unwrap();
         Ok(ExecutionResult::default())
     }
 
     async fn execute_operation(
         &mut self,
         _context: &OperationContext,
-        _operation: Self::Operation,
+        operation: Self::Operation,
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
-        Ok(ExecutionResult::default())
+        match operation {
+            Operation::Send { destination, text } => {
+                let msg = Message::Ack { msg: ChatMessage {
+                    timestamp: system_api::current_system_time(),
+                    text,
+                    account: destination.clone()
+                }};
+                Ok(ExecutionResult::default().with_message(destination.chain_id, msg))
+            }
+        }
     }
 
     async fn execute_message(
         &mut self,
         _context: &MessageContext,
-        _message: Self::Message,
+        message: Self::Message,
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
-        Ok(ExecutionResult::default())
+
+        match message {
+            Message::Ack { msg } => {
+                let msg_q_result = self.messages.get_mut_or_default(&msg.account).await;
+                match msg_q_result {
+                    Ok(msg_q) => {
+                        msg_q.push_back(msg);
+                        if msg_q.len() > MAX_Q_SIZE {
+                            msg_q.pop_front();
+                        }
+                        Ok(ExecutionResult::default())
+                    },
+                    _ => Err(Error::MessageNotProcessed)
+                }
+            }
+        }
+        
     }
 
     async fn handle_application_call(
@@ -53,7 +86,7 @@ impl Contract for Application {
         _forwarded_sessions: Vec<SessionId>,
     ) -> Result<ApplicationCallResult<Self::Message, Self::Response, Self::SessionState>, Self::Error>
     {
-        Ok(ApplicationCallResult::default())
+        Err(Error::ApplicationCallsNotSupported)
     }
 
     async fn handle_session_call(
@@ -64,13 +97,13 @@ impl Contract for Application {
         _forwarded_sessions: Vec<SessionId>,
     ) -> Result<SessionCallResult<Self::Message, Self::Response, Self::SessionState>, Self::Error>
     {
-        Ok(SessionCallResult::default())
+        Err(Error::SessionsNotSupported)
     }
 }
 
 /// An error that can occur during the contract execution.
 #[derive(Debug, Error)]
-pub enum ContractError {
+pub enum Error {
     /// Failed to deserialize BCS bytes
     #[error("Failed to deserialize BCS bytes")]
     BcsError(#[from] bcs::Error),
@@ -79,5 +112,15 @@ pub enum ContractError {
     #[error("Failed to deserialize JSON string")]
     JsonError(#[from] serde_json::Error),
 
-    // Add more error variants here.
+    /// Linchat application doesn't support any cross-application sessions.
+    #[error("Linchat application doesn't support any cross-application sessions")]
+    SessionsNotSupported,
+
+    /// Social application doesn't support any cross-application sessions.
+    #[error("Social application doesn't support any application calls")]
+    ApplicationCallsNotSupported,
+
+    #[error("Message not processed")]
+    MessageNotProcessed
+
 }

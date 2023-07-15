@@ -1,20 +1,62 @@
-use linera_sdk::base::{ContractAbi, ServiceAbi};
+use async_graphql::{InputObject, SimpleObject, Request, Response};
+use linera_sdk::base::{ChainId, ContractAbi, ServiceAbi, Timestamp};
+use serde::{Deserialize, Serialize};
 
-pub struct ApplicationAbi;
 
-impl ContractAbi for ApplicationAbi {
+pub const MAX_Q_SIZE: usize = 10;
+
+pub struct LinchatAbi;
+
+impl ContractAbi for LinchatAbi {
     type Parameters = ();
-    type InitializationArgument = ();
-    type Operation = ();
-    type Message = ();
+    type InitializationArgument = String;
+    type Operation = Operation;
+    type Message = Message;
     type ApplicationCall = ();
     type SessionCall = ();
     type SessionState = ();
     type Response = ();
 }
 
-impl ServiceAbi for ApplicationAbi {
+impl ServiceAbi for LinchatAbi {
     type Parameters = ();
-    type Query = ();
-    type QueryResponse = ();
+    type Query = Request;
+    type QueryResponse = Response;
+}
+
+///Operation
+#[derive(Debug, Deserialize, Serialize)]
+pub enum Operation {
+    /// Send a message across chain
+    Send { destination: Account, text: String },
+}
+
+/// Message
+#[derive(Debug, Deserialize, Serialize)]
+pub enum Message {
+    /// Accept the message
+    Ack { msg: ChatMessage },
+}
+
+/// Struct message with timestamp and text value
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, SimpleObject, InputObject)]
+pub struct ChatMessage {
+    /// timestamp associated with message
+    pub timestamp: Timestamp,
+    /// the content of message
+    pub text: String,
+    /// for simplification purposes
+    pub account: Account,
+}
+
+/// Struct owner with chain id, username information
+/// #[graphql(input_name = "Account")]
+#[derive(
+    Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, SimpleObject, InputObject,
+)]
+pub struct Account {
+    /// username
+    pub username: String,
+    /// chain id
+    pub chain_id: ChainId,
 }

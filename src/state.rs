@@ -1,9 +1,14 @@
-use linera_sdk::views::{RegisterView, ViewStorageContext};
+use std::collections::VecDeque;
+
+use linchat::{Account, ChatMessage};
+use linera_sdk::views::{MapView, SetView, ViewStorageContext};
 use linera_views::views::{GraphQLView, RootView};
 
 #[derive(RootView, GraphQLView)]
 #[view(context = "ViewStorageContext")]
-pub struct Application {
-    pub value: RegisterView<u64>,
-    // Add fields here.
+pub struct Linchat {
+    // Owner of the chat account
+    pub owner: SetView<Account>,
+    // Incoming messages
+    pub messages: MapView<Account, VecDeque<ChatMessage>>,
 }
