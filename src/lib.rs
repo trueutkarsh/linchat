@@ -1,7 +1,6 @@
-use async_graphql::{InputObject, SimpleObject, Request, Response};
+use async_graphql::{scalar, Request, Response};
 use linera_sdk::base::{ChainId, ContractAbi, ServiceAbi, Timestamp};
 use serde::{Deserialize, Serialize};
-
 
 pub const MAX_Q_SIZE: usize = 10;
 
@@ -38,8 +37,11 @@ pub enum Message {
     Ack { msg: ChatMessage },
 }
 
+scalar!(ChatMessage);
+
 /// Struct message with timestamp and text value
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, SimpleObject, InputObject)]
+// #[graphql(input_name = "ChatMsgInput")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChatMessage {
     /// timestamp associated with message
     pub timestamp: Timestamp,
@@ -49,11 +51,11 @@ pub struct ChatMessage {
     pub account: Account,
 }
 
+scalar!(Account);
+
 /// Struct owner with chain id, username information
 /// #[graphql(input_name = "Account")]
-#[derive(
-    Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, SimpleObject, InputObject,
-)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Account {
     /// username
     pub username: String,

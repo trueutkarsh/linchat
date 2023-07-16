@@ -4,11 +4,12 @@ mod state;
 
 use self::state::Linchat;
 use async_trait::async_trait;
-use linchat::{Account, Operation, ChatMessage, Message, MAX_Q_SIZE};
+use linchat::{Account, ChatMessage, Message, Operation, MAX_Q_SIZE};
 use linera_sdk::{
     base::{SessionId, WithContractAbi},
+    contract::system_api,
     ApplicationCallResult, CalleeContext, Contract, ExecutionResult, MessageContext,
-    OperationContext, SessionCallResult, ViewStateStorage, contract::system_api,
+    OperationContext, SessionCallResult, ViewStateStorage,
 };
 use thiserror::Error;
 
@@ -17,8 +18,6 @@ linera_sdk::contract!(Linchat);
 impl WithContractAbi for Linchat {
     type Abi = linchat::LinchatAbi;
 }
-
-
 
 #[async_trait]
 impl Contract for Linchat {
@@ -32,9 +31,9 @@ impl Contract for Linchat {
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
         let account = Account {
             username,
-            chain_id: system_api::current_chain_id() 
+            chain_id: system_api::current_chain_id(),
         };
-        self.owner.insert(&account).unwrap();
+        self.owner.push(account);
         Ok(ExecutionResult::default())
     }
 
@@ -45,11 +44,13 @@ impl Contract for Linchat {
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
         match operation {
             Operation::Send { destination, text } => {
-                let msg = Message::Ack { msg: ChatMessage {
-                    timestamp: system_api::current_system_time(),
-                    text,
-                    account: destination.clone()
-                }};
+                let msg = Message::Ack {
+                    msg: ChatMessage {
+                        timestamp: system_api::current_system_time(),
+                        text,
+                        account: self.owner.get(0).await.unwrap().unwrap(),
+                    },
+                };
                 Ok(ExecutionResult::default().with_message(destination.chain_id, msg))
             }
         }
@@ -60,7 +61,6 @@ impl Contract for Linchat {
         _context: &MessageContext,
         message: Self::Message,
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
-
         match message {
             Message::Ack { msg } => {
                 let msg_q_result = self.messages.get_mut_or_default(&msg.account).await;
@@ -71,12 +71,11 @@ impl Contract for Linchat {
                             msg_q.pop_front();
                         }
                         Ok(ExecutionResult::default())
-                    },
-                    _ => Err(Error::MessageNotProcessed)
+                    }
+                    _ => Err(Error::MessageNotProcessed),
                 }
             }
         }
-        
     }
 
     async fn handle_application_call(
@@ -121,6 +120,5 @@ pub enum Error {
     ApplicationCallsNotSupported,
 
     #[error("Message not processed")]
-    MessageNotProcessed
-
+    MessageNotProcessed,
 }

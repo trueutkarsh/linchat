@@ -3,7 +3,7 @@
 mod state;
 
 use self::state::Linchat;
-use async_graphql::{Request, Response, EmptySubscription, Schema, Object};
+use async_graphql::{EmptySubscription, Object, Request, Response, Schema};
 use async_trait::async_trait;
 use linchat::{Account, Operation};
 use linera_sdk::{base::WithServiceAbi, QueryContext, Service, ViewStateStorage};
@@ -28,19 +28,22 @@ impl Service for Linchat {
     ) -> Result<Response, Self::Error> {
         let schema = Schema::build(self.clone(), MutationRoot {}, EmptySubscription).finish();
         let response = schema.execute(request).await;
-        Ok(response)    }
+        Ok(response)
+    }
 }
-
 
 struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
     async fn send(&self, destn: Account, text: String) -> Vec<u8> {
-        bcs::to_bytes(&Operation::Send { destination: destn, text }).unwrap()
+        bcs::to_bytes(&Operation::Send {
+            destination: destn,
+            text,
+        })
+        .unwrap()
     }
 }
-
 
 /// An error that can occur while querying the service.
 #[derive(Debug, Error)]
