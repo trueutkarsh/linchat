@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use linchat::{Account, ChatMessage};
-use linera_sdk::views::{MapView, LogView, ViewStorageContext};
+use linera_sdk::views::{LogView, MapView, ViewStorageContext};
 use linera_views::views::{GraphQLView, RootView};
 
 #[derive(RootView, GraphQLView)]

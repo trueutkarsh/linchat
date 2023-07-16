@@ -27,20 +27,31 @@ impl ServiceAbi for LinchatAbi {
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Operation {
     /// Send a message across chain
-    Send { destination: Account, text: String },
+    Send {
+        destination: Account,
+        text: String,
+    },
+    ChangeUsername {
+        destination: ChainId,
+        name: String,
+    },
 }
 
 /// Message
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Message {
     /// Accept the message
-    Ack { msg: ChatMessage },
+    Ack {
+        msg: ChatMessage,
+    },
+    UsernameChange {
+        name: String,
+    },
 }
 
 scalar!(ChatMessage);
 
 /// Struct message with timestamp and text value
-// #[graphql(input_name = "ChatMsgInput")]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChatMessage {
     /// timestamp associated with message
@@ -54,7 +65,6 @@ pub struct ChatMessage {
 scalar!(Account);
 
 /// Struct owner with chain id, username information
-/// #[graphql(input_name = "Account")]
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Account {
     /// username

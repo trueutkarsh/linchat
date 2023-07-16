@@ -6,7 +6,7 @@ use self::state::Linchat;
 use async_graphql::{EmptySubscription, Object, Request, Response, Schema};
 use async_trait::async_trait;
 use linchat::{Account, Operation};
-use linera_sdk::{base::WithServiceAbi, QueryContext, Service, ViewStateStorage};
+use linera_sdk::{base::{WithServiceAbi, ChainId}, QueryContext, Service, ViewStateStorage};
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -40,6 +40,14 @@ impl MutationRoot {
         bcs::to_bytes(&Operation::Send {
             destination: destn,
             text,
+        })
+        .unwrap()
+    }
+
+    async fn change_username(&self, destn: ChainId, name: String) -> Vec<u8> {
+        bcs::to_bytes(&Operation::ChangeUsername {
+            destination: destn,
+            name,
         })
         .unwrap()
     }

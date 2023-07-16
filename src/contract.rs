@@ -53,6 +53,10 @@ impl Contract for Linchat {
                 };
                 Ok(ExecutionResult::default().with_message(destination.chain_id, msg))
             }
+            Operation::ChangeUsername { destination, name } => {
+                let msg = Message::UsernameChange { name };
+                Ok(ExecutionResult::default().with_message(destination, msg))
+            }
         }
     }
 
@@ -74,6 +78,17 @@ impl Contract for Linchat {
                     }
                     _ => Err(Error::MessageNotProcessed),
                 }
+            }
+            Message::UsernameChange { name } => {
+                // Allow change of username only once by admin
+                if self.owner.count() == 0 {
+                    let account = Account {
+                        username: name,
+                        chain_id: system_api::current_chain_id(),
+                    };
+                    self.owner.push(account);
+                }
+                Ok(ExecutionResult::default())
             }
         }
     }
