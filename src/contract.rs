@@ -57,6 +57,13 @@ impl Contract for Linchat {
                 let msg = Message::UsernameChange { name };
                 Ok(ExecutionResult::default().with_message(destination, msg))
             }
+            Operation::AddMember {
+                destination,
+                member,
+            } => {
+                let msg = Message::MemberAdd { member };
+                Ok(ExecutionResult::default().with_message(destination, msg))
+            }
         }
     }
 
@@ -87,6 +94,19 @@ impl Contract for Linchat {
                         chain_id: system_api::current_chain_id(),
                     };
                     self.owner.push(account);
+                }
+                Ok(ExecutionResult::default())
+            }
+            Message::MemberAdd { member } => {
+                let mut found: bool = false;
+                for i in 0..self.owner.count() {
+                    if member == self.owner.get(i).await.unwrap().unwrap() {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    self.owner.push(member);
                 }
                 Ok(ExecutionResult::default())
             }

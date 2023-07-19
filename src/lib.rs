@@ -27,13 +27,13 @@ impl ServiceAbi for LinchatAbi {
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Operation {
     /// Send a message across chain
-    Send {
-        destination: Account,
-        text: String,
-    },
-    ChangeUsername {
+    Send { destination: Account, text: String },
+    /// Change username of account
+    ChangeUsername { destination: ChainId, name: String },
+    /// Add more memebers to chat ownership
+    AddMember {
         destination: ChainId,
-        name: String,
+        member: Account,
     },
 }
 
@@ -41,12 +41,11 @@ pub enum Operation {
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Message {
     /// Accept the message
-    Ack {
-        msg: ChatMessage,
-    },
-    UsernameChange {
-        name: String,
-    },
+    Ack { msg: ChatMessage },
+    /// Change username message
+    UsernameChange { name: String },
+    /// Add member
+    MemberAdd { member: Account },
 }
 
 scalar!(ChatMessage);
