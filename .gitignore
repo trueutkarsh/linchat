@@ -1,1 +1,11 @@
 /target
+
+/web-frontend/linchat/node_modules
+/web-frontend/linchat/.pnp
+/web-frontend/linchat/.pnp.js
+
+
+/web-frontend/linchat/coverage
+/web-frontend/linchat/build
+
+/web-frontend/linchat/.env*
