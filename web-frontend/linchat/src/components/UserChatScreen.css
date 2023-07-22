@@ -1,0 +1,22 @@
+.ActiveChatsSideBar {
+    display: flex;
+    justify-content: flex-end;
+    /* To position the labels on the right side */
+}
+
+.ActiveChatsList {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    overflow-y: scroll;
+    height: 800px;
+    /* To align labels on the right side */
+}
+
+.ActiveChatsLabel {
+    cursor: pointer;
+    padding: 5px;
+    margin: 5px;
+    border: 1px solid black;
+    border-radius: 5px;
+}
