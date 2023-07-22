@@ -32,8 +32,8 @@ const MESSAGES_QUERY=gql`
 `;
 
 const SEND_MSG_MUTATION=gql`
-    mutation send($destn: Account!, $textMessage: String!){
-        send(destn: $destn, text: $textMessage)
+    mutation send($destn: Account! $text: String!){
+        send(destn: $destn, text: $text)
     }
 `;
 
@@ -111,7 +111,7 @@ const UserChatScreen = () => {
             client: userAppGQLClient,
             // skip: !otherChatsResponse || !existingChatsResponse,
             variables: {
-                textMessage: 'Hi !!',
+                text: 'Hi !!',
                 destn: {
                     username: 'admin',
                     chain_id: defaultChainId
@@ -119,7 +119,15 @@ const UserChatScreen = () => {
             }
         }
     );
-
+    
+    // send the first message to register the user
+    const [sendMessageMutation, { sendMessageData, sendMessageLoading, sendMessageError }] = useMutation(
+        SEND_MSG_MUTATION,
+        {
+            client: userAppGQLClient
+            // skip: !otherChatsResponse || !existingChatsResponse,
+        }
+    );
 
 
     // load existing chats
@@ -228,15 +236,16 @@ const UserChatScreen = () => {
 
     const handleSendMessage = () => {
         // Send message mutation logic here
+        console.log('before clicking', recipientChainData, inputMessage);
         userAppGQLClient
         .mutate({
             mutation: SEND_MSG_MUTATION,
             variables: {
-                textMessage: inputMessage,
+                text: inputMessage,
                 destn: {
                     username: recipientChainData?.username,
                     chain_id: recipientChainData?.chain_id
-                }
+                },
             }
         })
         .then((result) => {
@@ -245,6 +254,23 @@ const UserChatScreen = () => {
         .catch((error) => {
             console.error('error in sending message', error)
         })
+        // sendMessageMutation({
+        //     client: userAppGQLClient,
+        //     variables: {
+        //         text: inputMessage,
+        //         destn: {
+        //             username: recipientChainData.username,
+        //             chain_id: recipientChainData.chain_id
+        //         }
+        //     }
+        // })
+        // .then((result) => {
+        //     console.log('successfully sent message', result);
+        // })
+        // .catch((error) => {
+        //     console.error('failed to send message', error);
+        // })
+
 
     };
 
@@ -290,7 +316,7 @@ const UserChatScreen = () => {
                     </div>
 
                     <div className='MessageInputBox'>
-                        <input id='messageinput' type='text' name='inputMessage' value={inputMessage} onChange={(e) => setInputMessage(e.value) } ></input>
+                        <input id='messageinput' type='text' name='inputMessage' value={inputMessage} onChange={(e) => setInputMessage(e.target.value) } ></input>
                         <button id='send' onClick={handleSendMessage}>Send</button>
                     </div>
                 </div>
