@@ -65,6 +65,8 @@ const UserChatScreen = () => {
         [location]
     );
 
+    
+
     // component states
     const [inputMessage, setInputMessage] = useState('');
     const [recipientChainData, setRecipientChainData] = useState(null);
@@ -157,7 +159,7 @@ const UserChatScreen = () => {
     useEffect(() => {
         
         sendInitMessageMutation({
-            // client: userAppGQLClient,
+            client: userAppGQLClient,
             // skip: !existingChatsResponse,
             variables: {
                 text: 'Hi !!',
@@ -174,7 +176,7 @@ const UserChatScreen = () => {
             console.log('error in sending hi', error);
         })
     },
-        [defaultChainId, sendInitMessageMutation]
+        [userAppGQLClient, defaultChainId, sendInitMessageMutation]
     );
 
 
@@ -198,12 +200,13 @@ const UserChatScreen = () => {
       const intervalId = setInterval(() => {
         if (recipientChainData !== null) {
             fetchUserMessages({
+                client: userAppGQLClient,
                 variables: {
                     account: recipientChainData
                 }
             })
             .then((result) => {
-                setUserMessagesData(result.data.messages || []);
+                setUserMessagesData(result?.data.messages || []);
                 fetchRecipientMessages({
                     client: recipientAppGQLClient,
                     variables: {
@@ -214,7 +217,7 @@ const UserChatScreen = () => {
                     }
                 })
                 .then((result) => {
-                    setRecipientMessagesData(result.data.messages || []);
+                    setRecipientMessagesData(result?.data.messages || []);
                 })
                 .catch((error) => {
                     console.error('error fetching recipient messages', error);
@@ -231,22 +234,23 @@ const UserChatScreen = () => {
       return () => {
         clearInterval(intervalId);
       };
-    }, [location, recipientChainData, chainId, username, fetchRecipientMessages, fetchUserMessages, recipientAppGQLClient])
+    }, [location, recipientChainData, userAppGQLClient, chainId, username, fetchRecipientMessages, fetchUserMessages, recipientAppGQLClient, setUserMessagesData, setRecipientMessagesData])
     
     
     const handleActiveChatLabelClick = (chat) => {
         // set recipient chain data
+        // console.log('active chat data', chat);
         setRecipientChainData(chat);
         setRecipientAppGQLClient(graphqlClient(8080, chat.chain_id, location.state.application_id));
         setUserMessagesData([]);
         setRecipientMessagesData([]);
-        // console.log('this is my main chat now', recipientChainData);
+        console.log('this is my main chat now', recipientChainData);
     } 
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         // Send message mutation logic here
         console.log('before clicking', recipientChainData, inputMessage);
-        userAppGQLClient
+        await userAppGQLClient
         .mutate({
             mutation: SEND_MSG_MUTATION,
             variables: {
@@ -257,13 +261,13 @@ const UserChatScreen = () => {
                 },
             }
         })
-        .then((result) => {
-            console.log('successfully sent message', result);
-            setInputMessage('');
-        })
-        .catch((error) => {
-            console.error('error in sending message', error)
-        })
+        // .then((result) => {
+        //     console.log('successfully sent message', result);
+        //     setInputMessage('');
+        // })
+        // .catch((error) => {
+        //     console.error('error in sending message', error)
+        // })
         // sendMessageMutation({
         //     client: userAppGQLClient,
         //     variables: {
@@ -308,7 +312,8 @@ const UserChatScreen = () => {
                         {/* <p>{otherChatsLoading.toString()}</p>
                         <p>{existingChatsLoading.toString()}</p> */}
                         <h1>User Chat Screen</h1>
-                        <h2>{username}</h2>
+                        <h2 style={{backgroundColor: 'lightblue'}}>{username}</h2>
+                        <h2 style={{backgroundColor: 'lightcoral'}}>{recipientChainData?.username}</h2>
                         {/* <div className='OtherChatsSideBar'>
                             <label>Num other users</label>
                             <p>{otherChatsData.toString()}</p>
