@@ -53,18 +53,17 @@ const UserChatScreen = () => {
     const [defaultChainId, setDefaultChainId] = useState('');
     const [chainId, setChainId] = useState('');
     const [username, setUsername] = useState('');
+
+
     useEffect(() => {
         setAdminAppGQLClient(graphqlClient(8080, location.state.default_chain_id, location.state.application_id));
-        setUserAppGQLClient(graphqlClient(8080, location.state.chain_id, location.state.application_id, SCHEMA_TYPEDEFS));
+        setUserAppGQLClient(graphqlClient(8080, location.state.chain_id, location.state.application_id));
         setDefaultChainId(location.state.default_chain_id);
         setUsername(location.state.username)
         setChainId(location.state.chain_id)
     },
-    [location]
+        [location]
     );
-
-    // console.log(chain_id, default_chain_id, application_id, username);
-
 
     // component states
     const [inputMessage, setInputMessage] = useState('');
@@ -73,6 +72,11 @@ const UserChatScreen = () => {
     const [otherChatsData, setOtherChatsData] = useState([]);
     const [userMessagesData, setUserMessagesData] = useState([]);
     const [recipientMessagesData, setRecipientMessagesData] = useState([]);
+    // const [combinedMessagesData, setCombinedMessagesData] = useState([]);
+
+
+    // console.log(chain_id, default_chain_id, application_id, username);
+
 
 
     // GraphQL queries
@@ -86,7 +90,7 @@ const UserChatScreen = () => {
                 count: 100
             },
             fetchPolicy: 'network-only',
-            pollInterval: 15000
+            pollInterval: 1500
         },
     );
 
@@ -108,15 +112,7 @@ const UserChatScreen = () => {
     const [sendInitMessageMutation, { sendInitMessageData, sendInitMessageLoading, sendInitMessageError }] = useMutation(
         SEND_MSG_MUTATION,
         {
-            client: userAppGQLClient,
-            // skip: !otherChatsResponse || !existingChatsResponse,
-            variables: {
-                text: 'Hi !!',
-                destn: {
-                    username: 'admin',
-                    chain_id: defaultChainId
-                }
-            }
+            client: userAppGQLClient
         }
     );
     
@@ -128,6 +124,8 @@ const UserChatScreen = () => {
             // skip: !otherChatsResponse || !existingChatsResponse,
         }
     );
+
+
 
 
     // load existing chats
@@ -157,7 +155,18 @@ const UserChatScreen = () => {
 
     // send the init registration message
     useEffect(() => {
-        sendInitMessageMutation()
+        
+        sendInitMessageMutation({
+            // client: userAppGQLClient,
+            // skip: !existingChatsResponse,
+            variables: {
+                text: 'Hi !!',
+                destn: {
+                    username: 'admin',
+                    chain_id: defaultChainId
+                }
+            }
+        })
         .then((result) => {
             console.log('successfully sent hi', result);
         })
@@ -165,7 +174,7 @@ const UserChatScreen = () => {
             console.log('error in sending hi', error);
         })
     },
-    [sendInitMessageMutation]
+        [defaultChainId, sendInitMessageMutation]
     );
 
 
@@ -194,10 +203,9 @@ const UserChatScreen = () => {
                 }
             })
             .then((result) => {
-                console.log('user messages', result.data.messages);
-                setUserMessagesData(result.data.messages);
-
+                setUserMessagesData(result.data.messages || []);
                 fetchRecipientMessages({
+                    client: recipientAppGQLClient,
                     variables: {
                         account: {
                             username: username,
@@ -206,8 +214,7 @@ const UserChatScreen = () => {
                     }
                 })
                 .then((result) => {
-                    console.log('recipient messages', result.data.messages)
-                    setRecipientMessagesData(result.data.messages);
+                    setRecipientMessagesData(result.data.messages || []);
                 })
                 .catch((error) => {
                     console.error('error fetching recipient messages', error);
@@ -219,19 +226,21 @@ const UserChatScreen = () => {
             })
         }
         
-      }, 10000);
+      }, 1000);
     
       return () => {
         clearInterval(intervalId);
       };
-    }, [recipientChainData, chainId, username, fetchRecipientMessages, fetchUserMessages])
+    }, [location, recipientChainData, chainId, username, fetchRecipientMessages, fetchUserMessages, recipientAppGQLClient])
     
     
     const handleActiveChatLabelClick = (chat) => {
         // set recipient chain data
         setRecipientChainData(chat);
         setRecipientAppGQLClient(graphqlClient(8080, chat.chain_id, location.state.application_id));
-        console.log('this is my main chat now', recipientChainData);
+        setUserMessagesData([]);
+        setRecipientMessagesData([]);
+        // console.log('this is my main chat now', recipientChainData);
     } 
 
     const handleSendMessage = () => {
@@ -250,6 +259,7 @@ const UserChatScreen = () => {
         })
         .then((result) => {
             console.log('successfully sent message', result);
+            setInputMessage('');
         })
         .catch((error) => {
             console.error('error in sending message', error)
@@ -273,6 +283,9 @@ const UserChatScreen = () => {
 
 
     };
+    
+    const combinedMessagesData = [...userMessagesData, ...recipientMessagesData];
+    combinedMessagesData.sort((a, b) => {return a.timestamp - b.timestamp})
 
     return (
         <div>
@@ -288,20 +301,44 @@ const UserChatScreen = () => {
                             <p>Error loading data</p>
                         </div>
                 ) : (
+                
+                <div className='ChatsContainer'>
                         
-                <div className='UserChatBox'>
-                    {/* <p>{otherChatsLoading.toString()}</p>
-                    <p>{existingChatsLoading.toString()}</p> */}
-                    <h1>User Chat Screen</h1>
-                    <h2>{username}</h2>
-                    {/* <div className='OtherChatsSideBar'>
-                        <label>Num other users</label>
-                        <p>{otherChatsData.toString()}</p>
-                    </div> */}
+                    <div className='UserChatBox'>
+                        {/* <p>{otherChatsLoading.toString()}</p>
+                        <p>{existingChatsLoading.toString()}</p> */}
+                        <h1>User Chat Screen</h1>
+                        <h2>{username}</h2>
+                        {/* <div className='OtherChatsSideBar'>
+                            <label>Num other users</label>
+                            <p>{otherChatsData.toString()}</p>
+                        </div> */}
+
+                        <div className='Messages'>
+                            <label>Messages will come here</label>
+                            <div >
+                                <ul className='MessagesList' >
+                                {
+                                    combinedMessagesData.map((msg, index) => {
+                                        if (msg.account.username === username) {
+                                            return <li className='UserMessages' key={index}> {msg.text} </li>
+                                        } else {
+                                            return <li className='RecipientMessages' key={index}>{msg.text}</li>
+                                        }
+                                    })
+                                }
+                                </ul>
+                            </div>
+
+                        </div>
+
+                        <div className='MessageInputBox'>
+                            <input id='messageinput' type='text' name='inputMessage' value={inputMessage} onChange={(e) => setInputMessage(e.target.value) } ></input>
+                            <button id='send' onClick={handleSendMessage}>Send</button>
+                        </div>
+                    </div>
 
                     <div className='ActiveChatsSideBar'>
-                        {/* <label>Num Active Chats</label>
-                        <p>{existingChatsData.length.toString()}</p> */}
                         <div className='ActiveChatsList'>
                             {
                                 existingChatsData.map((activeChat, index) => {
@@ -309,16 +346,9 @@ const UserChatScreen = () => {
                                 })
                             }
                         </div>
-                    </div>
-
-                    <div className='Messages'>
-                        <label>Messages will come here</label>
-                    </div>
-
-                    <div className='MessageInputBox'>
-                        <input id='messageinput' type='text' name='inputMessage' value={inputMessage} onChange={(e) => setInputMessage(e.target.value) } ></input>
-                        <button id='send' onClick={handleSendMessage}>Send</button>
-                    </div>
+                    </div>                    
+                                
+                
                 </div>
 
                 )
