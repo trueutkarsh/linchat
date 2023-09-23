@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, gql, useLazyQuery } from '@apollo/client';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import './UserChatScreen.css';
 import graphqlClient from '../graphqlClient';
 // GraphQL queries and mutations here
@@ -40,46 +40,20 @@ const SEND_MSG_MUTATION=gql`
 
 const UserChatScreen = () => {
     const location = useLocation();
-    // const {
-    //     chain_id,
-    //     default_chain_id,
-    //     application_id,
-    //     username
-    // } = location.state;
 
-    const [adminAppGQLClient, setAdminAppGQLClient] = useState(graphqlClient(8080, null, null));
-    const [userAppGQLClient, setUserAppGQLClient] = useState(graphqlClient(8080, null, null));
-    const [recipientAppGQLClient, setRecipientAppGQLClient] = useState(graphqlClient(8080, null, null));
-    const [defaultChainId, setDefaultChainId] = useState('');
-    const [chainId, setChainId] = useState('');
-    const [username, setUsername] = useState('');
-
-
-    useEffect(() => {
-        setAdminAppGQLClient(graphqlClient(8080, location.state.default_chain_id, location.state.application_id));
-        setUserAppGQLClient(graphqlClient(8080, location.state.chain_id, location.state.application_id));
-        setDefaultChainId(location.state.default_chain_id);
-        setUsername(location.state.username)
-        setChainId(location.state.chain_id)
-    },
-        [location]
-    );
-
+    // state variables from prev screen
+    const [adminAppGQLClient, setAdminAppGQLClient] = useState(graphqlClient(8080, location.state.default_chain_id, location.state.application_id));
+    const [userAppGQLClient, setUserAppGQLClient] = useState(graphqlClient(8080, location.state.chain_id, location.state.application_id));
+    const [defaultChainId, setDefaultChainId] = useState(location.state.default_chain_id);
+    const [chainId, setChainId] = useState(location.state.chain_id);
+    const [username, setUsername] = useState(location.state.username);
     
 
     // component states
     const [inputMessage, setInputMessage] = useState('');
     const [recipientChainData, setRecipientChainData] = useState(null);
     const [existingChatsData, setExistingChatsData] = useState([]);
-    const [otherChatsData, setOtherChatsData] = useState([]);
     const [userMessagesData, setUserMessagesData] = useState([]);
-    const [recipientMessagesData, setRecipientMessagesData] = useState([]);
-    // const [combinedMessagesData, setCombinedMessagesData] = useState([]);
-
-
-    // console.log(chain_id, default_chain_id, application_id, username);
-
-
 
     // GraphQL queries
 
@@ -118,14 +92,14 @@ const UserChatScreen = () => {
         }
     );
     
-    // send the first message to register the user
-    const [sendMessageMutation, { sendMessageData, sendMessageLoading, sendMessageError }] = useMutation(
-        SEND_MSG_MUTATION,
-        {
-            client: userAppGQLClient
-            // skip: !otherChatsResponse || !existingChatsResponse,
-        }
-    );
+    // // send the first message to register the user
+    // const [sendMessageMutation, { sendMessageData, sendMessageLoading, sendMessageError }] = useMutation(
+    //     SEND_MSG_MUTATION,
+    //     {
+    //         client: userAppGQLClient
+    //         // skip: !otherChatsResponse || !existingChatsResponse,
+    //     }
+    // );
 
 
 
@@ -140,19 +114,6 @@ const UserChatScreen = () => {
         // []
         [existingChatsLoading, existingChatsError, existingChatsResponse]
     );
-
-
-
-    // load active chats
-    useEffect(() => {
-        if (!otherChatsLoading && !otherChatsError) {
-            setOtherChatsData(otherChatsResponse.messagesKeys);
-        }
-    },
-        // []
-        [otherChatsLoading, otherChatsError, otherChatsResponse]
-    );    
-
 
 
     // send the init registration message
@@ -177,6 +138,7 @@ const UserChatScreen = () => {
         })
     },
         [userAppGQLClient, defaultChainId, sendInitMessageMutation]
+        // []
     );
 
 
@@ -186,15 +148,7 @@ const UserChatScreen = () => {
             client: userAppGQLClient,
             fetchPolicy: 'network-only'
         }
-    );
-    
-    const [fetchRecipientMessages, {fetchRecipientMessagesData, fetchRecipientMessagesLoading}] = useLazyQuery(
-        MESSAGES_QUERY,
-        {
-            client: recipientAppGQLClient,
-            fetchPolicy: 'network-only'
-        }
-    );   
+    );  
 
     useEffect(() => {
       const intervalId = setInterval(() => {
@@ -206,22 +160,8 @@ const UserChatScreen = () => {
                 }
             })
             .then((result) => {
-                setUserMessagesData(result?.data.messages || []);
-                fetchRecipientMessages({
-                    client: recipientAppGQLClient,
-                    variables: {
-                        account: {
-                            username: username,
-                            chain_id: chainId
-                        }
-                    }
-                })
-                .then((result) => {
-                    setRecipientMessagesData(result?.data.messages || []);
-                })
-                .catch((error) => {
-                    console.error('error fetching recipient messages', error);
-                })
+                console.log("user messages", result);
+                setUserMessagesData(result?.data?.messages || []);
 
             })
             .catch((error) => {
@@ -234,22 +174,17 @@ const UserChatScreen = () => {
       return () => {
         clearInterval(intervalId);
       };
-    }, [location, recipientChainData, userAppGQLClient, chainId, username, fetchRecipientMessages, fetchUserMessages, recipientAppGQLClient, setUserMessagesData, setRecipientMessagesData])
+    }, [recipientChainData, userAppGQLClient, chainId, username, fetchUserMessages, setUserMessagesData])
     
     
     const handleActiveChatLabelClick = (chat) => {
         // set recipient chain data
-        // console.log('active chat data', chat);
         setRecipientChainData(chat);
-        setRecipientAppGQLClient(graphqlClient(8080, chat.chain_id, location.state.application_id));
         setUserMessagesData([]);
-        setRecipientMessagesData([]);
-        console.log('this is my main chat now', recipientChainData);
     } 
 
     const handleSendMessage = async () => {
         // Send message mutation logic here
-        console.log('before clicking', recipientChainData, inputMessage);
         await userAppGQLClient
         .mutate({
             mutation: SEND_MSG_MUTATION,
@@ -261,40 +196,18 @@ const UserChatScreen = () => {
                 },
             }
         })
-        // .then((result) => {
-        //     console.log('successfully sent message', result);
-        //     setInputMessage('');
-        // })
-        // .catch((error) => {
-        //     console.error('error in sending message', error)
-        // })
-        // sendMessageMutation({
-        //     client: userAppGQLClient,
-        //     variables: {
-        //         text: inputMessage,
-        //         destn: {
-        //             username: recipientChainData.username,
-        //             chain_id: recipientChainData.chain_id
-        //         }
-        //     }
-        // })
-        // .then((result) => {
-        //     console.log('successfully sent message', result);
-        // })
-        // .catch((error) => {
-        //     console.error('failed to send message', error);
-        // })
+        setInputMessage("");
 
 
     };
     
-    const combinedMessagesData = [...userMessagesData, ...recipientMessagesData];
+    const combinedMessagesData = [...userMessagesData];
     combinedMessagesData.sort((a, b) => {return a.timestamp - b.timestamp})
 
     return (
         <div>
             {
-                existingChatsLoading || otherChatsLoading ? (
+                existingChatsLoading ? (
                     <div>
                     <p>Loading !!</p>
                     <p>{existingChatsLoading.toString()}</p>

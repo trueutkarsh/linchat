@@ -2,7 +2,7 @@ use async_graphql::{scalar, Request, Response};
 use linera_sdk::base::{ChainId, ContractAbi, ServiceAbi, Timestamp};
 use serde::{Deserialize, Serialize};
 
-pub const MAX_Q_SIZE: usize = 10;
+pub const MAX_Q_SIZE: usize = 1000;
 
 pub struct LinchatAbi;
 

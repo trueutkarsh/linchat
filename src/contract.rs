@@ -44,13 +44,20 @@ impl Contract for Linchat {
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
         match operation {
             Operation::Send { destination, text } => {
-                let msg = Message::Ack {
-                    msg: ChatMessage {
+
+                let chat_msg = ChatMessage {
                         timestamp: system_api::current_system_time(),
                         text,
                         account: self.owner.get(0).await.unwrap().unwrap(),
-                    },
                 };
+
+                let msg = Message::Ack {
+                    msg: chat_msg.clone()
+                };
+
+                // Add the message to self message q as well
+                self.add_msg_to_queue(chat_msg.clone(), &destination).await.unwrap();
+
                 Ok(ExecutionResult::default().with_message(destination.chain_id, msg))
             }
             Operation::ChangeUsername { destination, name } => {
@@ -74,17 +81,8 @@ impl Contract for Linchat {
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
         match message {
             Message::Ack { msg } => {
-                let msg_q_result = self.messages.get_mut_or_default(&msg.account).await;
-                match msg_q_result {
-                    Ok(msg_q) => {
-                        msg_q.push_back(msg);
-                        if msg_q.len() > MAX_Q_SIZE {
-                            msg_q.pop_front();
-                        }
-                        Ok(ExecutionResult::default())
-                    }
-                    _ => Err(Error::MessageNotProcessed),
-                }
+                self.add_msg_to_queue(msg.clone(), &msg.account).await.unwrap();
+                Ok(ExecutionResult::default())
             }
             Message::UsernameChange { name } => {
                 // Allow change of username only once by admin
@@ -133,7 +131,30 @@ impl Contract for Linchat {
     {
         Err(Error::SessionsNotSupported)
     }
+
 }
+
+impl Linchat {
+    async fn add_msg_to_queue(
+        &mut self,
+        msg: ChatMessage,
+        destination: &Account
+    ) -> Result<(), Error> {
+        let msg_q_result = self.messages.get_mut_or_default(&destination).await;
+        match msg_q_result {
+            Ok(msg_q) => {
+                msg_q.push_back(msg);
+                if msg_q.len() > MAX_Q_SIZE {
+                    msg_q.pop_front();
+                }
+                Ok(())
+            }
+            _ => Err(Error::MessageNotAdded),
+        }        
+    }
+}
+
+
 
 /// An error that can occur during the contract execution.
 #[derive(Debug, Error)]
@@ -150,10 +171,13 @@ pub enum Error {
     #[error("Linchat application doesn't support any cross-application sessions")]
     SessionsNotSupported,
 
-    /// Social application doesn't support any cross-application sessions.
-    #[error("Social application doesn't support any application calls")]
+    /// Linchat application doesn't support any cross-application sessions.
+    #[error("Linchat application doesn't support any application calls")]
     ApplicationCallsNotSupported,
 
-    #[error("Message not processed")]
+    #[error("Cross chain message not processed")]
     MessageNotProcessed,
+
+    #[error("Message not added to self queue")]
+    MessageNotAdded,
 }
