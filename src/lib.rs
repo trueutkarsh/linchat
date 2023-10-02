@@ -23,7 +23,7 @@ impl ServiceAbi for LinchatAbi {
     type QueryResponse = Response;
 }
 
-///Operation
+/// Operation
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Operation {
     /// Send a message across chain
@@ -35,6 +35,11 @@ pub enum Operation {
         destination: ChainId,
         member: Account,
     },
+    /// Make group chat
+    SetGroupChatFlag {
+        flag: bool
+    }
+
 }
 
 /// Message

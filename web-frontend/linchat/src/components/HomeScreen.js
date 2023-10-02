@@ -163,7 +163,7 @@ const HomeScreen = () => {
                     mutation: CHANGE_USERNAME_MUTATION,
                     variables: {
                         chain_id: newchainresult?.data.openChain,
-                        name: username || groupChatName
+                        name: username || '#' + groupChatName
                     }
                 })
                 .then((changenameresult) => {
@@ -183,7 +183,7 @@ const HomeScreen = () => {
                                 'chain_id': newchainresult.data.openChain,
                                 'default_chain_id': defaultChainData?.chains.default,
                                 'application_id': applicationIdData?.applications[0].id,
-                                'groupChatName': groupChatName
+                                'groupChatName': '#' + groupChatName
                             }
                         })
 
@@ -222,10 +222,10 @@ const HomeScreen = () => {
                             <label htmlFor="join-user-input">Join as user:</label>
                             <input type="text" id="join-user-input" name='username' value={username} onChange={handleInputChange}/>
                         </div>
-                        {/* <div>
+                        <div>
                             <label htmlFor="start-group-input">Start a group chat:</label>
                             <input type="text" id="start-group-input" name='groupChatName' value={groupChatName} onChange={handleInputChange} />
-                        </div> */}
+                        </div>
                     </div>
                     <button className='begin' onClick={handleBeginClick}>Begin</button>
                 </div>

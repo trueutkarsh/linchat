@@ -1,0 +1,52 @@
+.ChatsContainer {
+    display: flex;
+
+}
+
+.UserChatBox {
+    position: fixed;
+    top: 20%;
+    left: 38%;
+}
+
+.ActiveMembersSideBar {
+    background-color: lightsalmon;
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    /* To position the labels on the right side */
+}
+
+.ActiveMembersList {
+    display: flex;
+    flex-direction: column;
+}
+
+.ActiveMembersLabel {
+    cursor: pointer;
+    padding: 5px;
+    margin: 5px;
+    border: 1px solid black;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.Messages {
+    float: left;
+    flex: 1;
+}
+
+.MessagesList {
+    padding: 0;
+    list-style-type: none;
+    display: inline-block;
+}
+
+.UserMessages {
+    background-color: lightblue;
+}
+
+.RecipientMessages {
+    background-color: lightcoral;
+}

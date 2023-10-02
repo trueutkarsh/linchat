@@ -62,6 +62,13 @@ impl MutationRoot {
         })
         .unwrap()
     }
+
+    async fn set_group_chat_flag(&self, flag: bool) -> Vec<u8> {
+        bcs::to_bytes(&Operation::SetGroupChatFlag {
+            flag 
+        }).unwrap()
+    }
+
 }
 
 /// An error that can occur while querying the service.

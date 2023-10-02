@@ -9,7 +9,7 @@ use linera_sdk::{
     base::{SessionId, WithContractAbi},
     contract::system_api,
     ApplicationCallResult, CalleeContext, Contract, ExecutionResult, MessageContext,
-    OperationContext, SessionCallResult, ViewStateStorage,
+    OperationContext, SessionCallResult, ViewStateStorage
 };
 use thiserror::Error;
 
@@ -55,8 +55,10 @@ impl Contract for Linchat {
                     msg: chat_msg.clone()
                 };
 
-                // Add the message to self message q as well
-                self.add_msg_to_queue(chat_msg.clone(), &destination).await.unwrap();
+                if !*self.isgroupchat.get() {
+                    // Not a group chat / Is a userchat add it to self q
+                    self.add_msg_to_queue(chat_msg.clone(), &destination).await.unwrap();
+                }
 
                 Ok(ExecutionResult::default().with_message(destination.chain_id, msg))
             }
@@ -71,6 +73,10 @@ impl Contract for Linchat {
                 let msg = Message::MemberAdd { member };
                 Ok(ExecutionResult::default().with_message(destination, msg))
             }
+            Operation::SetGroupChatFlag { flag } => {
+                self.isgroupchat.set(flag);
+                Ok(ExecutionResult::default())
+            }
         }
     }
 
@@ -81,7 +87,13 @@ impl Contract for Linchat {
     ) -> Result<ExecutionResult<Self::Message>, Self::Error> {
         match message {
             Message::Ack { msg } => {
-                self.add_msg_to_queue(msg.clone(), &msg.account).await.unwrap();
+                if *self.isgroupchat.get() {
+                    // add message to admin queue only if it is group chat
+                    let admin: Account = self.owner.get(0).await.unwrap().unwrap();
+                    self.add_msg_to_queue(msg.clone(), &admin).await.unwrap();
+                } else {
+                    self.add_msg_to_queue(msg.clone(), &msg.account).await.unwrap();
+                }
                 Ok(ExecutionResult::default())
             }
             Message::UsernameChange { name } => {

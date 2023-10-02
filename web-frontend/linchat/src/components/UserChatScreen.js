@@ -37,6 +37,13 @@ const SEND_MSG_MUTATION=gql`
     }
 `;
 
+const ADD_MEMBER_MUTATION=gql`
+    mutation addMember($destn: ChainId!, $member: Account!){
+        addMember(destn: $destn, member: $member)
+    }
+`;
+
+
 
 const UserChatScreen = () => {
     const location = useLocation();
@@ -54,6 +61,7 @@ const UserChatScreen = () => {
     const [recipientChainData, setRecipientChainData] = useState(null);
     const [existingChatsData, setExistingChatsData] = useState([]);
     const [userMessagesData, setUserMessagesData] = useState([]);
+    const [groupChatMessagesData, setGroupChatMessagesData] = useState([])
 
     // GraphQL queries
 
@@ -153,20 +161,38 @@ const UserChatScreen = () => {
     useEffect(() => {
       const intervalId = setInterval(() => {
         if (recipientChainData !== null) {
-            fetchUserMessages({
-                client: userAppGQLClient,
-                variables: {
-                    account: recipientChainData
-                }
-            })
-            .then((result) => {
-                console.log("user messages", result);
-                setUserMessagesData(result?.data?.messages || []);
+            if (recipientChainData.username[0] !== '#') {
+                fetchUserMessages({
+                    client: userAppGQLClient,
+                    variables: {
+                        account: recipientChainData
+                    }
+                })
+                .then((result) => {
+                    console.log("user messages", result);
+                    setUserMessagesData(result?.data?.messages || []);
+    
+                })
+                .catch((error) => {
+                    console.error('error fetching user messages', error)
+                })
+            } else {
+                let groupChatClient = graphqlClient(8080, recipientChainData.chain_id, location.state.application_id);
+                groupChatClient
+                .query({
+                    query: MESSAGES_QUERY,
+                    variables: {
+                        account: recipientChainData
+                    },
+                    fetchPolicy: 'network-only'
+                })
+                .then((result) => {
+                    console.log('groupchat messages', result)
+                    setGroupChatMessagesData(result.data.messages || [])
 
-            })
-            .catch((error) => {
-                console.error('error fetching user messages', error)
-            })
+                })
+
+            }
         }
         
       }, 1000);
@@ -178,6 +204,30 @@ const UserChatScreen = () => {
     
     
     const handleActiveChatLabelClick = (chat) => {
+
+        console.log('clicked chat', chat)
+
+        if (chat.username[0] === '#') {
+            let groupChatClient = graphqlClient(8080, chat.chain_id, location.state.application_id);
+            groupChatClient
+            .mutate({
+                mutation: ADD_MEMBER_MUTATION,
+                variables: {
+                    destn: chat.chain_id,
+                    member: {
+                        username: username,
+                        chain_id: chainId
+                    }
+                }
+            })
+            .then((result) => {
+                console.log('successfully added member to group', result, chat)
+            })
+            .catch((error) => {
+                console.log('failed to add member to chat', error);
+            })
+        }
+
         // set recipient chain data
         setRecipientChainData(chat);
         setUserMessagesData([]);
@@ -201,7 +251,15 @@ const UserChatScreen = () => {
 
     };
     
-    const combinedMessagesData = [...userMessagesData];
+    
+    let combinedMessagesData = [];
+    if (recipientChainData !== null) {
+        if (recipientChainData.username[0] === '#') {
+            combinedMessagesData = [...groupChatMessagesData]
+        } else {
+            combinedMessagesData = [...userMessagesData]
+        }
+    }
     combinedMessagesData.sort((a, b) => {return a.timestamp - b.timestamp})
 
     return (
