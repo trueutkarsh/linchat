@@ -297,9 +297,11 @@ const UserChatScreen = () => {
                                 {
                                     combinedMessagesData.map((msg, index) => {
                                         if (msg.account.username === username) {
-                                            return <li className='UserMessages' key={index}> {msg.text} </li>
+                                            return <li className='UserMessages' key={index}> {msg.account.username + ' -> ' + msg.text} </li>
+                                        } else if (msg.account.username[0] === '#') {
+                                            return <li className='RecipientMessages' key={index}>{'admin -> ' + msg.text}</li>
                                         } else {
-                                            return <li className='RecipientMessages' key={index}>{msg.text}</li>
+                                            return <li className='RecipientMessages' key={index}>{msg.account.username + ' -> ' + msg.text}</li>
                                         }
                                     })
                                 }

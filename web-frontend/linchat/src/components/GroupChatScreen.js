@@ -195,9 +195,9 @@ const GroupChatScreen = () => {
                                         {
                                             userMessagesData.map((msg, index) => {
                                                 if (msg.account.username === groupChatName) {
-                                                    return <li className='UserMessages' key={index}> {msg.text} </li>
+                                                    return <li className='UserMessages' key={index}> {'admin -> ' + msg.text} </li>
                                                 } else {
-                                                    return <li className='RecipientMessages' key={index}>{msg.text}</li>
+                                                    return <li className='RecipientMessages' key={index}>{msg.account.username + ' -> ' + msg.text}</li>
                                                 }
                                             })
                                         }
