@@ -1,3 +1,13 @@
+:root {
+    font-size: 16px;
+    font-family: 'Open Sans';
+    --text-primary: #b6b6b6;
+    --text-secondary: #ececec;
+    --bg-primary: #23232e;
+    --bg-secondary: #141418;
+    --transition-speed: 600ms;
+}
+
 .ChatsContainer {
     display: flex;
 
@@ -15,6 +25,8 @@
     right: 0;
     top: 0;
     bottom: 0;
+    transition: width 600ms ease;
+    overflow: scroll;
     /* To position the labels on the right side */
 }
 
@@ -48,4 +60,8 @@
 
 .RecipientMessages {
     background-color: lightcoral;
+}
+
+.UserLabel {
+    font-weight: bold;
 }

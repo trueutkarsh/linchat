@@ -297,11 +297,11 @@ const UserChatScreen = () => {
                                 {
                                     combinedMessagesData.map((msg, index) => {
                                         if (msg.account.username === username) {
-                                            return <li className='UserMessages' key={index}> {msg.account.username + ' -> ' + msg.text} </li>
+                                            return <li className='UserMessages' key={index}> <label className='UserLabel'>{msg.account.username} </label> <label className='MessageText'> {' -> ' + msg.text} </label> </li>
                                         } else if (msg.account.username[0] === '#') {
-                                            return <li className='RecipientMessages' key={index}>{'admin -> ' + msg.text}</li>
+                                            return <li className='RecipientMessages' key={index}><label className='UserLabel'>{'admin'} </label> <label className='MessageText'> {' -> ' + msg.text} </label></li>
                                         } else {
-                                            return <li className='RecipientMessages' key={index}>{msg.account.username + ' -> ' + msg.text}</li>
+                                            return <li className='RecipientMessages' key={index}><label className='UserLabel'>{msg.account.username} </label> <label className='MessageText'> {' -> ' + msg.text} </label></li>
                                         }
                                     })
                                 }
@@ -317,6 +317,7 @@ const UserChatScreen = () => {
                     </div>
 
                     <div className='ActiveChatsSideBar'>
+                        <label>Active Chats</label>
                         <div className='ActiveChatsList'>
                             {
                                 existingChatsData.map((activeChat, index) => {

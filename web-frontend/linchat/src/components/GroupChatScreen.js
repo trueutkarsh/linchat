@@ -195,9 +195,9 @@ const GroupChatScreen = () => {
                                         {
                                             userMessagesData.map((msg, index) => {
                                                 if (msg.account.username === groupChatName) {
-                                                    return <li className='UserMessages' key={index}> {'admin -> ' + msg.text} </li>
+                                                    return <li className='UserMessages' key={index}> <label className='UserLabel'>{'admin'} </label> <label className='MessageText'> {' -> ' + msg.text} </label> </li>
                                                 } else {
-                                                    return <li className='RecipientMessages' key={index}>{msg.account.username + ' -> ' + msg.text}</li>
+                                                    return <li className='RecipientMessages' key={index}><label className='UserLabel'>{msg.account.username} </label> <label className='MessageText'> {' -> ' + msg.text} </label></li>
                                                 }
                                             })
                                         }
@@ -217,7 +217,7 @@ const GroupChatScreen = () => {
                             <div className='ActiveMembersList'>
                                 {
                                     existingMembersData.map((activeChat, index) => {
-                                        return <label className='ActiveMembersLabel' key={index} > {activeChat.username}</label>
+                                        return <label className='ActiveMembersLabel' key={index} > {activeChat.username[0] === '#' ? 'admin':activeChat.username }</label>
                                     })
                                 }
                             </div>
